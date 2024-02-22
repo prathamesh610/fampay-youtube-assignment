@@ -13,6 +13,10 @@ type Server interface {
 	Start() error
 	Readiness(ctx echo.Context) error
 	Liveness(ctx echo.Context) error
+
+	StartCron(context echo.Context) error
+
+	Search(ctx echo.Context) error
 }
 
 type EchoServer struct {
@@ -32,7 +36,7 @@ func NewEchoServer(db database.DatabaseClient) Server {
 
 func (s *EchoServer) Start() error {
 
-	if err := s.echo.Start(":8080"); err != nil && err != http.ErrServerClosed{
+	if err := s.echo.Start(":8080"); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server shut down unexpectedly with error %s", err)
 		return err
 	}
@@ -43,6 +47,11 @@ func (s *EchoServer) registerRoutes() {
 	s.echo.GET("/readiness", s.Readiness)
 	s.echo.GET("/liveness", s.Liveness)
 
+	cg := s.echo.Group("/cron")
+	cg.GET("/:searchQuery", s.StartCron)
+
+	sg := s.echo.Group("/search")
+	sg.GET("/:query", s.Search)
 }
 
 func (s *EchoServer) Readiness(ctx echo.Context) error {
