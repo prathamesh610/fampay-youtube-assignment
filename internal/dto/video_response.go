@@ -6,8 +6,8 @@ import (
 )
 
 type VideoResponse struct {
-	VideoTitle   string
-	Description  string
-	ThumbnailUrl models.Thumbnails
-	PublishedAt  time.Time
+	VideoTitle   string            `json:"video-title"`
+	Description  string            `json:"description"`
+	ThumbnailUrl models.Thumbnails `json:"thumbnail-url"`
+	PublishedAt  time.Time         `json:"published-at"`
 }

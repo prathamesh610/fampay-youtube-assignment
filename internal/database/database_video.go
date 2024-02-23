@@ -76,3 +76,36 @@ func (c Client) SearchVideo(searchQuery string, pageNumber int) (*[]models.Video
 
 	return videos, nil
 }
+
+func (c Client) GetVideosCount() (int64, error) {
+	res, err := c.DB.Database("fampay").Collection("videos").EstimatedDocumentCount(context.TODO())
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return 0, &dberrors.NotFoundError{
+				Entity: "video",
+				Query:  "count",
+			}
+		}
+		return 0, err
+	}
+	return res, nil
+}
+
+func (c Client) GetVideosPaginated(pageNumber int) (*[]models.Video, error) {
+	videos := &[]models.Video{}
+	sort := bson.M{"publishingDate": -1}
+	res, err := c.DB.Database("fampay").Collection("videos").Find(context.TODO(), bson.D{}, options.Find().SetSort(sort).SetSkip(int64(pageNumber*5)).SetLimit(5))
+	if err != nil {
+		return nil, err
+	}
+
+	if err = res.All(context.TODO(), videos); err != nil {
+		return nil, err
+	}
+
+	if len(*videos) == 0 {
+		return nil, &dberrors.NotFoundError{Entity: "Video", Query: "videos-paginated"}
+	}
+
+	return videos, nil
+}

@@ -17,6 +17,7 @@ type Server interface {
 	StartCron(context echo.Context) error
 
 	Search(ctx echo.Context) error
+	GetAllVideos(ctx echo.Context) error
 }
 
 type EchoServer struct {
@@ -51,6 +52,7 @@ func (s *EchoServer) registerRoutes() {
 	cg.GET("/:searchQuery", s.StartCron)
 
 	sg := s.echo.Group("/search")
+	sg.GET("", s.GetAllVideos)
 	sg.GET("/:query", s.Search)
 }
 

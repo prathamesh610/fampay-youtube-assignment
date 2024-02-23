@@ -17,6 +17,8 @@ type DatabaseClient interface {
 	Ready() bool
 
 	GetVideo(videoId string) (*models.Video, error)
+	GetVideosCount() (int64, error)
+	GetVideosPaginated(pageNumber int) (*[]models.Video, error)
 	SaveVideoInDB(video *models.Video) error
 	UpdateVideoInDB(video *models.Video) error
 	SearchVideo(searchQuery string, pageNumber int) (*[]models.Video, error)

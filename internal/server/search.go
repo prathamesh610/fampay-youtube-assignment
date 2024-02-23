@@ -25,3 +25,22 @@ func (s *EchoServer) Search(ctx echo.Context) error {
 	}
 	return ctx.JSON(http.StatusOK, videos)
 }
+
+func (s *EchoServer) GetAllVideos(ctx echo.Context) error {
+	pageString := ctx.QueryParam("page")
+	pageNumber := 1
+	if pageString != "" {
+		page, err := strconv.Atoi(pageString)
+		if err != nil || page < 1 {
+			return ctx.JSON(http.StatusBadRequest, "Please provide valid pageNumber")
+		}
+		pageNumber = page
+	}
+
+	res, err := service.GetAllVideos(s.DB, pageNumber)
+
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
