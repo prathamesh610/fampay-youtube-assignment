@@ -2,16 +2,15 @@ package server
 
 import (
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/service/thirdparty"
 	"net/http"
 	"time"
-
-	"github.com/labstack/echo/v4"
 )
 
 func (s *EchoServer) StartCron(context echo.Context) error {
 	searchQuery := context.Param("searchQuery")
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -24,4 +23,5 @@ func (s *EchoServer) StartCron(context echo.Context) error {
 			}
 		}
 	}
+	return nil
 }

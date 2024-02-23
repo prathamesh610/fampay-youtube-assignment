@@ -1,11 +1,11 @@
 package server
 
 import (
+	"github.com/prathameshj610/fampay-youtube-assignment/internal/database"
 	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/prathameshj610/fampay-youtube-assignment/internal/database"
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/models"
 )
 

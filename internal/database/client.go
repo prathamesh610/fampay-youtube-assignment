@@ -2,70 +2,50 @@ package database
 
 import (
 	"context"
-	"fmt"
-	"time"
-
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/models"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
+
+	//"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
+	//"gorm.io/driver/postgres"
+	//"gorm.io/gorm"
+	//"gorm.io/gorm/schema"
 )
 
 type DatabaseClient interface {
 	Ready() bool
 
-	GetVideo(ctx context.Context, video models.Video) (*models.Video, error)
-	SaveVideosToDB(ctx context.Context, videos *[]models.Video) (*[]models.Video, error)
-	SearchVideo(ctx context.Context, searchQuery string) (*[]models.Video, error)
-
-	GetThumbnail(ctx context.Context, video models.ThumbnailUrl) (*models.ThumbnailUrl, error)
-	SaveThumbnailsToDB(ctx context.Context, thumbnails *[]models.ThumbnailUrl) (*[]models.ThumbnailUrl, error)
-	SearchThumbnails(ctx context.Context, videoId []string) (*[]models.ThumbnailUrl, error)
+	GetVideo(videoId string) (*models.Video, error)
+	SaveVideoInDB(video *models.Video) error
+	UpdateVideoInDB(video *models.Video) error
+	SearchVideo(searchQuery string, pageNumber int) (*[]models.Video, error)
 }
 
 type Client struct {
-	DB *gorm.DB
+	DB *mongo.Client
 }
 
 func NewDatabaseClient() (DatabaseClient, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
-		"localhost",
-		"postgres",
-		"postgres",
-		"postgres",
-		5432,
-		"disable")
+	// MongoDB connection string
+	mongoURI := "mongodb://localhost:27017"
+	clientOptions := options.Client().ApplyURI(mongoURI)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			TablePrefix: "fampay.",
-		},
-		NowFunc: func() time.Time {
-			return time.Now().UTC()
-		},
-		QueryFields: true,
-	})
+	// Connect to MongoDB
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, err
 	}
-	client := Client{
-		DB: db,
-	}
 
-	return client, nil
+	return &Client{DB: client}, nil
 }
 
-func (c Client) Ready() bool {
-	var ready string
-	tx := c.DB.Raw("SELECT 1 as ready").Scan(&ready)
-
-	if tx.Error != nil {
+func (c *Client) Ready() bool {
+	err := c.DB.Ping(context.Background(), nil)
+	if err != nil {
 		return false
 	}
-
-	if ready == "1" {
-		return true
-	}
-
-	return false
+	return true
 }

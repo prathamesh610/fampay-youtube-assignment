@@ -3,51 +3,75 @@ package database
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/dberrors"
-
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/models"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (c Client) SaveVideosToDB(ctx context.Context, videos *[]models.Video) (*[]models.Video, error) {
-	result := c.DB.WithContext(ctx).Save(&videos)
-
-	fmt.Printf("Saved VIDEO to db with: %v", videos)
-
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return videos, nil
-}
-
-func (c Client) GetVideo(ctx context.Context, video models.Video) (*models.Video, error) {
+func (c Client) GetVideo(videoId string) (*models.Video, error) {
 	video1 := &models.Video{}
-	result := c.DB.WithContext(ctx).Where(&models.Video{
-		SearchQuery: video.SearchQuery,
-	}).First(&video1)
+	filter := bson.M{"_id": videoId}
+	err := c.DB.Database("fampay").Collection("videos").FindOne(context.TODO(), filter).Decode(&video1)
 
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return &video, nil
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, &dberrors.NotFoundError{
+				Entity: "video",
+				Query:  videoId,
+			}
 		}
-		return nil, result.Error
+		return nil, err
 	}
 
 	return video1, nil
 
 }
 
-func (c Client) SearchVideo(ctx context.Context, searchQuery string) (*[]models.Video, error) {
-	videos := &[]models.Video{}
-	// TODO: sort by published at
-	result := c.DB.WithContext(ctx).Where(&models.Video{SearchQuery: searchQuery}).Order("publishing_date desc").Find(&videos)
+func (c Client) SaveVideoInDB(video *models.Video) error {
+	_, err := c.DB.Database("fampay").Collection("videos").InsertOne(context.TODO(), video)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, &dberrors.NotFoundError{Entity: "Video", Query: searchQuery}
-		}
-		return nil, result.Error
+func (c Client) UpdateVideoInDB(video *models.Video) error {
+	update := bson.M{
+		"$set": video,
+	}
+	_, err := c.DB.Database("fampay").Collection("videos").UpdateByID(context.TODO(), video.VideoId, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c Client) SearchVideo(searchQuery string, pageNumber int) (*[]models.Video, error) {
+	videos := &[]models.Video{}
+	regex := bson.M{"$regex": searchQuery, "$options": "i"}
+	// define the filter to search multiple fields using fuzzy logic
+	filter := bson.M{
+		"$or": []bson.M{
+			{"title": regex},
+			{"description": regex},
+		},
+	}
+
+	sort := bson.M{"publishingDate": -1}
+
+	res, err := c.DB.Database("fampay").Collection("videos").Find(context.TODO(), filter, options.Find().SetSort(sort).SetSkip(int64(pageNumber*5)).SetLimit(5))
+	if err != nil {
+		return nil, err
+	}
+
+	if err = res.All(context.TODO(), videos); err != nil {
+		return nil, err
+	}
+
+	if len(*videos) == 0 {
+		return nil, &dberrors.NotFoundError{Entity: "Video", Query: searchQuery}
 	}
 
 	return videos, nil

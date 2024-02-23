@@ -18,7 +18,6 @@ import (
 // 	GetYoutubeResultAndPopulateDB(ctx context.Context, client database.DatabaseClient, searchQuery string) error
 // }
 
-// TODO: create a database model object and store in db.
 func GetYoutubeResultAndPopulateDB(ctx context.Context, client database.DatabaseClient, searchQuery string) error {
 
 	nextPageToken := ""
@@ -43,19 +42,24 @@ func GetYoutubeResultAndPopulateDB(ctx context.Context, client database.Database
 		}
 	}
 
-	// fmt.Printf("%v", videoResult)
+	videoModels := utils.ConvertConvertYoutubeVideoResToDbModelSlice(videoResult)
 
-	videoModels, thumbnailModels := utils.ConvertConvertYoutubeVideoResToDbModelSlice(ctx, client, searchQuery, videoResult)
+	for _, model := range *videoModels {
+		video, err := client.GetVideo(model.VideoId)
+		if err != nil {
+			err := client.SaveVideoInDB(&model)
+			if err != nil {
+				return err
+			}
 
-	// TODO: check in db and if it is not existing then save or update.
+		}
+		if video != nil {
+			err := client.UpdateVideoInDB(&model)
+			if err != nil {
+				return err
+			}
+		}
 
-	_, err := client.SaveVideosToDB(ctx, videoModels)
-	if err != nil {
-		return err
-	}
-	_, err = client.SaveThumbnailsToDB(ctx, thumbnailModels)
-	if err != nil {
-		return err
 	}
 	return nil
 }

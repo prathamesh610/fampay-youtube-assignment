@@ -1,11 +1,13 @@
 package dto
 
-import "time"
+import (
+	"github.com/prathameshj610/fampay-youtube-assignment/internal/models"
+	"time"
+)
 
 type VideoResponse struct {
-	VideoTitle string
-	//ChannelName  string
+	VideoTitle   string
 	Description  string
-	ThumbnailUrl string
+	ThumbnailUrl models.Thumbnails
 	PublishedAt  time.Time
 }
