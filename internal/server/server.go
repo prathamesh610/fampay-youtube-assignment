@@ -1,8 +1,8 @@
 package server
 
 import (
+	"fmt"
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/database"
-	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -38,7 +38,7 @@ func NewEchoServer(db database.DatabaseClient) Server {
 func (s *EchoServer) Start() error {
 
 	if err := s.echo.Start(":8080"); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Server shut down unexpectedly with error %s", err)
+		fmt.Printf("Server shut down unexpectedly with error %s", err)
 		return err
 	}
 	return nil

@@ -30,7 +30,7 @@ type Client struct {
 
 func NewDatabaseClient() (DatabaseClient, error) {
 	// MongoDB connection string
-	mongoURI := "mongodb://localhost:27017"
+	mongoURI := "mongodb://mongodb:27017"
 	clientOptions := options.Client().ApplyURI(mongoURI)
 
 	// Connect to MongoDB

@@ -3,9 +3,9 @@ package thirdparty
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/prathameshj610/fampay-youtube-assignment/internal/dberrors"
 	"io"
-	"log"
-
 	"net/http"
 
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/constants"
@@ -14,9 +14,27 @@ import (
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/utils"
 )
 
-// type YoutubeService interface {
-// 	GetYoutubeResultAndPopulateDB(ctx context.Context, client database.DatabaseClient, searchQuery string) error
-// }
+var keys map[string]bool
+var initialized bool
+
+func initializeMap() {
+	keys = make(map[string]bool)
+}
+func addKeys(key string) {
+	keys[key] = false
+}
+
+func InitializeAndAddKeys(key string) {
+	if !initialized {
+		initialized = true
+		initializeMap()
+	}
+	addKeys(key)
+}
+
+func exhaustedKey(key string) {
+	keys[key] = true
+}
 
 func GetYoutubeResultAndPopulateDB(ctx context.Context, client database.DatabaseClient, searchQuery string) error {
 
@@ -67,7 +85,7 @@ func GetYoutubeResultAndPopulateDB(ctx context.Context, client database.Database
 // This method fetches search response for a query
 func getSerachResult(searchQuery string, nextPageToken string) (*response.YoutubeSearchResponse, error) {
 
-	url := constants.SEARCH + "?key=" + "AIzaSyCB5H390Q04K9SawzKYBTHVPc9mE4tU200" + "&q=" + searchQuery + "&kind=youtube%23searchListResponse&publishedAfter=2024-01-01T00:00:00Z"
+	url := constants.SEARCH + "?q=" + searchQuery + "&kind=youtube%23searchListResponse&publishedAfter=2024-01-01T00:00:00Z"
 
 	if nextPageToken != "" {
 		url = url + "&pageToken=" + nextPageToken
@@ -87,7 +105,7 @@ func getSerachResult(searchQuery string, nextPageToken string) (*response.Youtub
 // This method for every video id fetches video details from youtube
 func getVideoDetails(videoId string) (*response.YoutubeVideoResponse, error) {
 
-	url := constants.VIDEOS + "?key=" + "AIzaSyCB5H390Q04K9SawzKYBTHVPc9mE4tU200" + "&part=snippet&id=" + videoId
+	url := constants.VIDEOS + "?part=snippet&id=" + videoId
 
 	result := &response.YoutubeVideoResponse{}
 
@@ -102,11 +120,32 @@ func getVideoDetails(videoId string) (*response.YoutubeVideoResponse, error) {
 // Generic function to get and parse response from youtube returning
 // the parsed object.
 func getResultAndParse[T any](url string, result T) (T, error) {
+	var apiKey string
+
+	for key, val := range keys {
+		if !val {
+			apiKey = key
+			break
+		}
+	}
+
+	if apiKey == "" {
+		return result, &dberrors.KeysExhausted{}
+	}
+	url += "&key=" + apiKey
 
 	res, err := http.Get(url)
+	if res.StatusCode == http.StatusForbidden {
+		exhaustedKey(apiKey)
+		parse, err := getResultAndParse(url, result)
+		if err != nil {
+			return parse, err
+		}
+		return parse, nil
+	}
 
 	if err != nil {
-		log.Fatalf("Unable to get results for url %s with error %v\n", url, err)
+		fmt.Printf("Unable to get results for url %s with error %v\n", url, err)
 		return result, err
 	}
 
@@ -114,12 +153,12 @@ func getResultAndParse[T any](url string, result T) (T, error) {
 	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		log.Fatalf("Unable to read body in [thirdparty.getResultAndParse] with error %v\n", err)
+		fmt.Printf("Unable to read body in [thirdparty.getResultAndParse] with error %v\n", err)
 		return result, err
 	}
 
 	if err := json.Unmarshal(body, &result); err != nil {
-		log.Fatalf("Can not unmarshal JSON with error %v\n", err)
+		fmt.Printf("Can not unmarshal JSON with error %v\n", err)
 		return result, err
 	}
 	return result, nil
