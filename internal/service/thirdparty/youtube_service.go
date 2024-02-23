@@ -1,7 +1,6 @@
 package thirdparty
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/prathameshj610/fampay-youtube-assignment/internal/dberrors"
@@ -36,14 +35,14 @@ func exhaustedKey(key string) {
 	keys[key] = true
 }
 
-func GetYoutubeResultAndPopulateDB(ctx context.Context, client database.DatabaseClient, searchQuery string) error {
+func GetYoutubeResultAndPopulateDB(client database.DatabaseClient, searchQuery string) error {
 
 	nextPageToken := ""
 
 	result := make([]response.YoutubeSearchResponse, 0)
 
 	for i := 0; i < 5; i++ {
-		res, _ := getSerachResult(searchQuery, nextPageToken)
+		res, _ := getSearchResult(searchQuery, nextPageToken)
 		nextPageToken = res.NextPageToken
 		result = append(result, *res)
 		if nextPageToken == "" {
@@ -83,7 +82,7 @@ func GetYoutubeResultAndPopulateDB(ctx context.Context, client database.Database
 }
 
 // This method fetches search response for a query
-func getSerachResult(searchQuery string, nextPageToken string) (*response.YoutubeSearchResponse, error) {
+func getSearchResult(searchQuery string, nextPageToken string) (*response.YoutubeSearchResponse, error) {
 
 	url := constants.SEARCH + "?q=" + searchQuery + "&kind=youtube%23searchListResponse&publishedAfter=2024-01-01T00:00:00Z"
 

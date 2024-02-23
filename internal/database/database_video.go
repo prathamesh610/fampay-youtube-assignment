@@ -61,7 +61,8 @@ func (c Client) SearchVideo(searchQuery string, pageNumber int) (*[]models.Video
 
 	sort := bson.M{"publishingDate": -1}
 
-	res, err := c.DB.Database("fampay").Collection("videos").Find(context.TODO(), filter, options.Find().SetSort(sort).SetSkip(int64(pageNumber*5)).SetLimit(5))
+	res, err := c.DB.Database("fampay").Collection("videos").
+		Find(context.TODO(), filter, options.Find().SetSort(sort).SetSkip(int64(pageNumber*5)).SetLimit(5))
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,8 @@ func (c Client) GetVideosCount() (int64, error) {
 func (c Client) GetVideosPaginated(pageNumber int) (*[]models.Video, error) {
 	videos := &[]models.Video{}
 	sort := bson.M{"publishingDate": -1}
-	res, err := c.DB.Database("fampay").Collection("videos").Find(context.TODO(), bson.D{}, options.Find().SetSort(sort).SetSkip(int64(pageNumber*5)).SetLimit(5))
+	res, err := c.DB.Database("fampay").Collection("videos").
+		Find(context.TODO(), bson.D{}, options.Find().SetSort(sort).SetSkip(int64(pageNumber*5)).SetLimit(5))
 	if err != nil {
 		return nil, err
 	}

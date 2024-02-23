@@ -17,11 +17,10 @@ func (s *EchoServer) StartCron(context echo.Context) error {
 		select {
 		case <-ticker.C:
 			fmt.Println("Task executed at", time.Now())
-			err := thirdparty.GetYoutubeResultAndPopulateDB(context.Request().Context(), s.DB, searchQuery)
+			err := thirdparty.GetYoutubeResultAndPopulateDB(s.DB, searchQuery)
 			if err != nil {
 				return context.JSON(http.StatusInternalServerError, err)
 			}
 		}
 	}
-	return nil
 }
