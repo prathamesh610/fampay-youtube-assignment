@@ -18,6 +18,8 @@ type Server interface {
 
 	Search(ctx echo.Context) error
 	GetAllVideos(ctx echo.Context) error
+
+	AddNewKey(ctx echo.Context) error
 }
 
 type EchoServer struct {
@@ -54,6 +56,9 @@ func (s *EchoServer) registerRoutes() {
 	sg := s.echo.Group("/search")
 	sg.GET("", s.GetAllVideos)
 	sg.GET("/:query", s.Search)
+
+	yg := s.echo.Group("/keys")
+	yg.POST("/:key", s.AddNewKey)
 }
 
 func (s *EchoServer) Readiness(ctx echo.Context) error {
